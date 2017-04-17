@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+
+.msg_receive{
+    padding-left:0;
+    margin-left:0;
+}
+.msg_sent{
+    padding-bottom:20px !important;
+    margin-right:0;
+}
+.messages {
+  background: white;
+  padding: 10px;
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  max-width:100%;
+}
+.messages > p {
+    font-size: 13px;
+    margin: 0 0 0.2rem 0;
+  }
+.messages > time {
+    font-size: 11px;
+    color: #ccc;
+}
+.msg_container {
+    padding: 10px;
+    overflow: hidden;
+    display: flex;
+}
+img {
+    display: block;
+    width: 100%;
+}
+.avatar {
+    position: relative;
+}
+.base_receive > .avatar:after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0;
+    height: 0;
+    border: 5px solid #FFF;
+    border-left-color: rgba(0, 0, 0, 0);
+    border-bottom-color: rgba(0, 0, 0, 0);
+}
+
+.base_sent {
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+.base_sent > .avatar:after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    border: 5px solid white;
+    border-right-color: transparent;
+    border-top-color: transparent;
+    box-shadow: 1px 1px 2px rgba(black, 0.2); // not quite perfect but close
+}
+
+.msg_sent > time{
+    float: right;
+}
+#chat_room{
+    background: #b4adc9;
+    height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+.top-bar {
+  background: #666;
+  color: white;
+  padding: 10px;
+  position: relative;
+  overflow: hidden;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+}
+.panel-footer{
+    border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+.panel-footer .input-group{
+    width: 90%;
+}
+.input-group-btn{
+    display: block;
+}
+.right{
+    float: right;
+}
+.user-name{
+    float: left;
+    padding: 5px;
+}
+.list-group-item{
+    text-align: right;
+}
+    </style>
+    <div class="container">
+        <div class="col-lg-8">
+            <h1>This is chat</h1>
+            <div class="panel-heading top-bar">
+                    <div class="col-md-8 col-xs-8">
+                        <h3 class="panel-title"><span class="glyphicon glyphicon-comment"></span><span id="chat_title_id"> Chat</span></h3>
+                    </div>
+                    <div class="col-md-4 col-xs-4" style="text-align: right;">
+                        <a href="#"><span id="minim_chat_window" class="glyphicon glyphicon-minus icon_minim"></span></a>
+                        <a href="#"><span id="exit-chat" class="glyphicon glyphicon-remove icon_close" data-id="chat_window_1"></span></a>
+                    </div>
+            </div>
+            <div id="chat_room">
+            </div>
+            <div class="panel-footer">
+                    <div class="input-group">
+                        <input id='chat_input' type="text" class="form-control input-sm chat_input" placeholder="Write your message here..." >
+                        <span class="input-group-btn">
+                            <button class="btn btn-primary btn-sm" id="btn-chat" disabled=true>Send</button>
+                        </span>
+                    </div>
+                </div>
+        </div>
+        <div class="col-lg-4">
+            <h1>Users list</h1>
+            <div id="users">
+                <ul class="list-group">
+                {% for user in users %}
+                    <li class="list-group-item">
+                        <a class="user-name" href="#" username="{{user.username}}"> {{ user.username }} </a>
+                        <a href="{% url 'users:change_friends' action='add' pk=user.pk %}" class="btn btn-sm btn-info" >Add friend</a>
+                    </li>  
+                {% endfor %}
+                </ul>
+            </div>
+
+            <h1>Friends</h1>
+            <div id="friends">
+                <ul class="list-group">
+                {% for friend in friends %}
+                    <li class="list-group-item">
+                        <a class="user-name" href="#" username="{{friend.username}}" room="{{friend.room}}"> {{ friend.username }} {{friend.room}} </a>
+                        <a href="{% url 'users:change_friends' action='loose' pk=friend.pk %}" class="btn btn-sm btn-danger">Remove friend</a>
+                    </li> 
+                {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+
+<script>
+var user_id = {{ current_user_id }};
+socket = new WebSocket("ws://" + window.location.host + "/chat/");
+socket.onmessage = function(e) {
+
+    var data = JSON.parse(e.data);
+
+    if(data.msg_type == "msg"){
+        if ( parseInt(user_id, 10) == parseInt(data.user_id,10) ){
+            var newmsg = sent_message_template(data.message, data.username, data.user_image);
+        }else{
+            var newmsg = got_message_template(data.message, data.username, data.user_image);
+        }
+        document.getElementById(data.room).innerHTML = document.getElementById(data.room).innerHTML + newmsg;
+        document.getElementById('chat_room').scrollTop = document.getElementById('chat_room').scrollHeight;
+    }else if (data.msg_type == "joined"){
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                    
+                messages = JSON.parse(this.responseText);
+  
+                for(message in messages){ 
+                    if ( parseInt(user_id, 10) == parseInt(messages[message].user_id, 10) ){
+                        var newmsg = sent_message_template(messages[message].message, messages[message].username, messages[message].profile_photo);
+                    } else {
+                        var newmsg = got_message_template(messages[message].message, messages[message].username, messages[message].profile_photo);
+                    }
+                    document.getElementById(messages[message].room).innerHTML = newmsg + document.getElementById(messages[message].room).innerHTML;                       
+                            
+                }
+                document.getElementById('chat_room').scrollTop = document.getElementById('chat_room').scrollHeight;
+            }
+        };
+        xhttp.open("GET", "/chat/get_messages/" + data.room + "/", true);
+        xhttp.send();
+    }
+
+}
+
+var elements = document.getElementById('friends').getElementsByTagName('a')
+document.getElementById('chat_room').scrollTop = document.getElementById('chat_room').scrollHeight;
+
+for (var i=0; i<elements.length; i++){
+    elements[i].addEventListener('click', (function(){
+        var name = elements[i].getAttribute("username");
+        var room = elements[i].getAttribute("room");
+  
+        return function(){
+            var roomdiv = "<div id='" + room + "'></div>";
+            document.getElementById('btn-chat').removeAttribute('disabled');
+            socket.send(
+                    JSON.stringify({
+                        "command": "join",
+                        "room": room,
+                    })
+            );
+            document.getElementById('chat_room').innerHTML = roomdiv;
+            document.getElementById('chat_title_id').innerHTML = 'Chat - ' + name;
+            
+        };
+    })());
+}
+document.getElementById('btn-chat').addEventListener('click', function(){
+    room = document.getElementById('chat_room').getElementsByTagName('div')[0].id
+    input = document.getElementById('chat_input').value;
+    console.log("text: " + input);
+    document.getElementById('chat_input').value = '';
+    console.log(input);
+    socket.send(
+        JSON.stringify({
+            "command": "send",
+            "message": input,
+            "room": room,
+        })
+    );
+});
+function got_message_template(text, user, profile_image){
+    
+    return '<div class="row msg_container base_receive">' +
+        '<div class="col-md-2 col-xs-2 avatar">' +
+            '<img src="media/' + profile_image + '" class=" img-responsive ">' +
+        '</div>' +
+        '<div class="col-md-10 col-xs-10">'+
+            '<div class="messages msg_receive">'+
+                '<p>' + text + '</p>'+
+                '<time datetime="2009-11-13T20:00">' + user + ' • 51 min</time>'+
+            '</div>'+
+        '</div>'+
+    ' </div>';
+}
+function sent_message_template(text, user, profile_image){
+    return '<div class="row msg_container base_sent">'+
+               '<div class="col-md-10 col-xs-10">'+
+                   '<div class="messages msg_sent">'+
+                       '<p>' + text + '</p>'+
+                       '<time datetime="2009-11-13T20:00">' + user + ' • 51 min</time>'+
+                   '</div>'+
+                '</div>'+
+                '<div class="col-md-2 col-xs-2 avatar">'+
+                    '<img src="media/' + profile_image + '" class=" img-responsive ">'+
+                '</div>'+
+            '</div>';
+}
+
+
+</script>
+
+{% endblock content %}

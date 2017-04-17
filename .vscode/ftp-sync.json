@@ -1,0 +1,19 @@
+{
+    "remotePath": "/var/www/channels-chat/channels_chat/",
+    "host": "192.168.131.131",
+    "username": "website-manager",
+    "password": "website-manager",
+    "port": 21,
+    "secure": false,
+    "protocol": "ftp",
+    "uploadOnSave": true,
+    "passive": false,
+    "debug": false,
+    "privateKeyPath": null,
+    "passphrase": null,
+    "ignore": [
+        "\\.vscode",
+        "\\.git",
+        "\\.DS_Store"
+    ]
+}
