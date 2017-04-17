@@ -1,11 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ user_form.as_p }}
-        {{ profile_form.as_p }}
-        <button type="submit"> Submit form </button>
-    </form>
+    <div class="edit-profile-containter">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ user_form.as_p }}
+            {{ profile_form.as_p }}
+            <div class="button-panel">
+                <button type="submit" class="btn btn-default"> Submit form </button>
+            </div>
+        </form>
+    </div>
+    <script>
+    </script>
 
 {% endblock content %}

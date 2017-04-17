@@ -3,11 +3,12 @@ from __future__ import unicode_literals
 
 from django.shortcuts import render, redirect, HttpResponse
 from django.views.generic import TemplateView
-from users.forms import RegistrationForm, EditProfileForm, EditUserForm
+from users.forms import RegistrationForm, EditProfileForm, EditUserForm, LoginForm, ChangePassswordForm
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
-from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import update_session_auth_hash, login
 from django.contrib.auth.models import User
 from models import Friend
+
 
 # Create your views here.
 
@@ -47,7 +48,7 @@ class EditProfileView(TemplateView):
 
 class ChangePasswordView(TemplateView):
     def get(self, request):
-        form = PasswordChangeForm(user=request.user)
+        form = ChangePassswordForm(user=request.user)
         args = {'form': form}
         return render(request, 'users/change-password.html', args)
     def post(self, request):
@@ -79,3 +80,18 @@ def change_friends(request, action, pk):
         elif action == 'loose':
             Friend.lose_friend(request.user, new_user)
         return redirect('/')
+
+class LoginView(TemplateView):
+    def get(self, request):
+        form = LoginForm()
+        args = {'form': form}
+
+        return render(request, 'users/login.html', args)
+
+    def post(self, request):
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            login(request, form.get_user())
+            return redirect('/')
+        else:
+            return redirect('/users/login')

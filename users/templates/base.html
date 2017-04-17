@@ -1,10 +1,11 @@
+{% load static %}
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" 
     integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-
+    <link rel="stylesheet" href="{% static 'style.css' %}"/>
 </head>
 
 <body>
@@ -19,7 +20,7 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="#">Project name</a>
+            <a class="navbar-brand" href="#">Chat</a>
         </div>
         <div id="navbar" class="navbar-collapse collapse">
             {% if user.is_authenticated %}
@@ -28,6 +29,7 @@
                 <li><a href="{% url 'users:view_profile' %}">Profile</a></li>
                 <li><a href="{% url 'users:edit_profile' %}">Edit profile</a></li>
                 <li><a href="{% url 'users:change_password' %}">Change password</a></li>
+                <li><span class="logged-as"> Logged in as {{ user.username }} </span></li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
                 <li><a href="{% url 'users:logout' %}">Log out</a></li>
@@ -43,10 +45,10 @@
         </div><!--/.nav-collapse -->
     </div><!--/.container-fluid -->
 </nav>
-
-{% block content %}
-{% endblock %}
-
+<div class="container">
+    {% block content %}
+    {% endblock %}
+<div>
 </body>
 
 
