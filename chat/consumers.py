@@ -120,10 +120,11 @@ def chat_send(message):
         message=message['message'],
         user=message.user,
         username=message.user.username,
-        user_image=str(message.user.profile.profile_photo)
+        user_image=str(message.user.profile.profile_photo),
+        message_type=message['message_type']
     )
     content = json.dumps({
-        "msg_type": "msg",
+        "msg_type": message['message_type'],
         "message": message['message'],
         "room": room,
         "username": str(message.user),

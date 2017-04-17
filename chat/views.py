@@ -11,7 +11,10 @@ from django.http import JsonResponse
 from django.core import serializers
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
-
+from django.views.decorators.csrf import csrf_exempt
+from channels_chat import settings
+import os
+import time
 # Create your views here.
 
 @login_required
@@ -50,13 +53,35 @@ def get_messages(request, room):
 
     for item in query_data:
         messages.append({
-            "created": str(item.created),
+            "created": item.created.strftime("%Y-%m-%d %H:%M"),
             "message": item.message,
             "room": item.room,
             "username": item.user.username,
             "profile_photo": str(item.user.profile.profile_photo),
-            "user_id": item.user.pk
+            "user_id": item.user.pk,
+            "message_type": item.message_type
         })
     
 
     return HttpResponse(json.dumps(messages))
+
+@csrf_exempt
+def upload_photo(request):
+
+    image = request.FILES['image']
+    room = request.POST['room']
+    timestamp = int(time.time())
+
+    filename = str(timestamp) + ".jpg"
+
+    if not os.path.exists(os.path.join(settings.MEDIA_ROOT, "room_images", room)):
+        os.makedirs(os.path.join(settings.MEDIA_ROOT, "room_images", room))
+
+    with open(os.path.join(settings.MEDIA_ROOT, "room_images", room, filename), 'w+') as destination:
+        for chunk in image.chunks():
+            destination.write(chunk)
+
+    return HttpResponse(json.dumps({
+        'imagename': os.path.join(room, filename),
+        'room': room
+    }))

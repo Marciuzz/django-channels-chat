@@ -19,6 +19,10 @@
                     <div class="input-group">
                         <input id='chat_input' type="text" class="form-control input-sm chat_input" placeholder="Write your message here..." >
                         <span class="input-group-btn">
+                            <label class="btn btn-default btn-file">
+                                <span class="glyphicon glyphicon-picture" aria-hidden="true"></span> 
+                                <input type="file" name="image" id="chat_file_input" style="display: none;">
+                            </label>
                             <button class="btn btn-primary btn-sm" id="btn-chat" disabled=true>Send</button>
                         </span>
                     </div>
@@ -50,18 +54,18 @@
             </div>
         </div>
     </div>
+
 <script>
 var user_id = {{ current_user_id }};
 socket = new WebSocket("ws://" + window.location.host + "/chat/");
 socket.onmessage = function(e) {
 
     var data = JSON.parse(e.data);
-
     if(data.msg_type == "msg"){
         if ( parseInt(user_id, 10) == parseInt(data.user_id,10) ){
-            var newmsg = sent_message_template(data.message, data.username, data.user_image);
+            var newmsg = sent_message_template(data.message, data.username, data.user_image, new Date(Date.now()).toLocaleString('lt'));
         }else{
-            var newmsg = got_message_template(data.message, data.username, data.user_image);
+            var newmsg = got_message_template(data.message, data.username, data.user_image, new Date(Date.now()).toLocaleString('lt'));
         }
         document.getElementById(data.room).innerHTML = document.getElementById(data.room).innerHTML + newmsg;
         document.getElementById('chat_room').scrollTop = document.getElementById('chat_room').scrollHeight;
@@ -74,18 +78,33 @@ socket.onmessage = function(e) {
   
                 for(message in messages){ 
                     if ( parseInt(user_id, 10) == parseInt(messages[message].user_id, 10) ){
-                        var newmsg = sent_message_template(messages[message].message, messages[message].username, messages[message].profile_photo);
+                        if(messages[message].message_type == "msg"){
+                            var newmsg = sent_message_template(messages[message].message, messages[message].username, messages[message].profile_photo, messages[message].created);
+                        }else if(messages[message].message_type == "image"){
+                            var newmsg = sent_image_template(messages[message].message, messages[message].username, messages[message].profile_photo, messages[message].created);
+                        }
                     } else {
-                        var newmsg = got_message_template(messages[message].message, messages[message].username, messages[message].profile_photo);
+                        if(messages[message].message_type == "msg"){
+                            var newmsg = got_message_template(messages[message].message, messages[message].username, messages[message].profile_photo, messages[message].created);
+                        }else if(messages[message].message_type == "image"){
+                            var newmsg = got_image_template(messages[message].message, messages[message].username, messages[message].profile_photo, messages[message].created);
+                        }
                     }
-                    document.getElementById(messages[message].room).innerHTML = newmsg + document.getElementById(messages[message].room).innerHTML;                       
-                            
+                    document.getElementById(messages[message].room).innerHTML = newmsg + document.getElementById(messages[message].room).innerHTML;                           
                 }
                 document.getElementById('chat_room').scrollTop = document.getElementById('chat_room').scrollHeight;
             }
         };
         xhttp.open("GET", "/chat/get_messages/" + data.room + "/", true);
         xhttp.send();
+    }else if (data.msg_type == "image"){
+        if ( parseInt(user_id, 10) == parseInt(data.user_id,10) ){
+            var newmsg = sent_image_template(data.message, data.username, data.user_image, new Date(Date.now()).toLocaleString('lt'));
+        }else{
+            var newmsg = got_image_template(data.message, data.username, data.user_image, new Date(Date.now()).toLocaleString('lt'));
+        }
+        document.getElementById(data.room).innerHTML = document.getElementById(data.room).innerHTML + newmsg;
+        document.getElementById('chat_room').scrollTop = document.getElementById('chat_room').scrollHeight;
     }
 
 }
@@ -124,10 +143,11 @@ document.getElementById('btn-chat').addEventListener('click', function(){
             "command": "send",
             "message": input,
             "room": room,
+            "message_type": "msg"
         })
     );
 });
-function got_message_template(text, user, profile_image){
+function got_message_template(text, user, profile_image, created){
     
     return '<div class="row msg_container base_receive">' +
         '<div class="col-md-2 col-xs-2 avatar">' +
@@ -136,17 +156,44 @@ function got_message_template(text, user, profile_image){
         '<div class="col-md-10 col-xs-10">'+
             '<div class="messages msg_receive">'+
                 '<p>' + text + '</p>'+
-                '<time datetime="2009-11-13T20:00">' + user + ' • 51 min</time>'+
+                '<time datetime="' + created + '">' + user + ' ' + created+' </time>'+
             '</div>'+
         '</div>'+
     ' </div>';
 }
-function sent_message_template(text, user, profile_image){
+function sent_message_template(text, user, profile_image, created){
     return '<div class="row msg_container base_sent">'+
                '<div class="col-md-10 col-xs-10">'+
                    '<div class="messages msg_sent">'+
                        '<p>' + text + '</p>'+
-                       '<time datetime="2009-11-13T20:00">' + user + ' • 51 min</time>'+
+                       '<time datetime="' + created + '">' + user + ' ' + created+' </time>'+
+                   '</div>'+
+                '</div>'+
+                '<div class="col-md-2 col-xs-2 avatar">'+
+                    '<img src="media/' + profile_image + '" class=" img-responsive ">'+
+                '</div>'+
+            '</div>';
+}
+function got_image_template(text, user, profile_image, created){
+    
+    return '<div class="row msg_container base_receive">' +
+        '<div class="col-md-2 col-xs-2 avatar">' +
+            '<img src="media/' + profile_image + '" class=" img-responsive ">' +
+        '</div>' +
+        '<div class="col-md-10 col-xs-10">'+
+            '<div class="messages msg_receive">'+
+                '<img class="message-img" src="/media/room_images/' + text + '" />'+
+                '<time datetime="' + created + '">' + user + ' ' + created+' </time>'+
+            '</div>'+
+        '</div>'+
+    ' </div>';
+}
+function sent_image_template(text, user, profile_image, created){
+    return '<div class="row msg_container base_sent">'+
+               '<div class="col-md-10 col-xs-10">'+
+                   '<div class="messages msg_sent">'+
+                       '<img class="message-img" src="/media/room_images/' + text + '" />'+
+                       '<time datetime="' + created + '">' + user + ' ' + created+' </time>'+
                    '</div>'+
                 '</div>'+
                 '<div class="col-md-2 col-xs-2 avatar">'+
@@ -155,6 +202,49 @@ function sent_message_template(text, user, profile_image){
             '</div>';
 }
 
+document.getElementById('chat_file_input').addEventListener('change', function(){
+    
+    var file = this.files[0];
+    name = file.name;
+    size = file.size;
+    type = file.type;
+
+    if(file.name.length < 1) {
+    }
+    else if(file.size > 100000) {
+        alert("The file is too big");
+    }
+    else if(file.type != 'image/png' && file.type != 'image/jpg' && file.type != 'image/gif' && file.type != 'image/jpeg' ) {
+        alert("The file does not match png, jpg or gif");
+    }
+    else {
+        
+        var formData = new FormData();
+        room = document.getElementById('chat_room').getElementsByTagName('div')[0].id
+        formData.append("image", file);
+        formData.append("room", room);
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/chat/upload_photo/', true);
+        xhr.send(formData);
+
+        xhr.onreadystatechange = function() {
+            
+            if (this.readyState == 4 && this.status == 200) {
+                response = JSON.parse(this.responseText);
+
+                socket.send(
+                    JSON.stringify({
+                        "command": "send",
+                        "message": response.imagename,
+                        "room": response.room,
+                        "message_type": "image"
+                    })
+                );
+                document.getElementById('chat_file_input').value = '';
+            }
+        };
+    }
+});
 
 </script>
 

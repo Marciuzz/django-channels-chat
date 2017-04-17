@@ -25,3 +25,6 @@ class ChatMessage(models.Model):
 
     #user image
     user_image = models.CharField(max_length=255, null=True)
+
+    #type
+    message_type = models.CharField(max_length=10, null=True)
