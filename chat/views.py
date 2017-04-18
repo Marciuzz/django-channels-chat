@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.shortcuts import render, HttpResponse
+from django.shortcuts import render, HttpResponse, redirect
 
 from django.contrib.auth.models import User
 from users.models import Friend
@@ -15,12 +15,16 @@ from django.views.decorators.csrf import csrf_exempt
 from channels_chat import settings
 import os
 import time
+from chat.models import Room
+from django.views.generic import TemplateView
+from django.db.models import Q
+from chat.forms import RoomEditForm
+
 # Create your views here.
 
 @login_required
-def home(request):
+def home(request, roomID=None):
 
-    
     friends = {}
     try:
         friend = Friend.objects.get(current_user=request.user)
@@ -29,10 +33,8 @@ def home(request):
         pass
 
     for friend in friends:
-        if friend.pk < request.user.pk:
-            friend.room = 'room-' + str(friend.pk) + '-' + str(request.user.pk)
-        else:
-            friend.room = 'room-' + str(request.user.pk) + '-' + str(friend.pk)
+        room = Room.objects.get( (Q(user1=request.user) & Q(user2=friend)) | (Q(user2=request.user) & Q(user1=friend)) )
+        friend.room = room.pk
 
     friend_ids = []
     for friend in friends:
@@ -40,28 +42,31 @@ def home(request):
     friend_ids.append(request.user.pk)
 
     users = User.objects.filter(~Q(pk__in = friend_ids))
-
-    args = {'users': users, 'friends': friends, 'current_user_id': request.user.pk}
+    if roomID:
+        args = {'users': users, 'friends': friends, 'current_user_id': request.user.pk, 'roomID': roomID}
+    else:
+        args = {'users': users, 'friends': friends, 'current_user_id': request.user.pk, 'roomID': "False"}
 
     return render(request, 'chat/home.html', args)
 
 def get_messages(request, room):
 
-    query_data = ChatMessage.objects.filter(room=room).order_by('-created')[:20]
+    targetroom = Room.objects.get(pk=room)
+
+    query_data = ChatMessage.objects.filter(room=targetroom).order_by('-created')[:20]
 
     messages = []
-
+    
     for item in query_data:
         messages.append({
             "created": item.created.strftime("%Y-%m-%d %H:%M"),
             "message": item.message,
-            "room": item.room,
+            "room": item.room.pk,
             "username": item.user.username,
             "profile_photo": str(item.user.profile.profile_photo),
             "user_id": item.user.pk,
             "message_type": item.message_type
         })
-    
 
     return HttpResponse(json.dumps(messages))
 
@@ -85,3 +90,21 @@ def upload_photo(request):
         'imagename': os.path.join(room, filename),
         'room': room
     }))
+
+class RoomEditView(TemplateView):
+    def get(self, request, room):
+        if room =='0':
+            return redirect('/')
+        else:
+            room = Room.objects.get(pk=room)
+            form = RoomEditForm(instance=room)   
+            args = {"form": form}
+            return render(request, 'chat/edit_room.html', args);
+        
+    def post(self,request, room):
+        room = Room.objects.get(pk=room)
+        form = RoomEditForm(request.POST, instance=room)
+        if form.is_valid():
+            form.save()
+            return redirect('/chat/' + str(room.pk) + '/' )
+        return redirect('/')

@@ -151,3 +151,11 @@ img {
     max-height: 200px;
     width: auto;
 }
+.edit-chat{
+    color: #fff;
+    text-decoration: none;
+    font-size: 18px;
+}
+.edit-room-form{
+    margin-top: 250px;
+}

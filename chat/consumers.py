@@ -3,8 +3,9 @@ from channels.handler import AsgiHandler
 from channels import Group
 from channels.sessions import channel_session
 from channels.auth import channel_session_user, channel_session_user_from_http
-from models import ChatMessage
+from models import ChatMessage, Room
 from channels import Channel
+
 
 import json
 # def http_consumer(message):
@@ -95,7 +96,11 @@ def chat_join(message):
     room = message['room']
     Group("chat-%s" % room).add(message['reply_channel'])
     
+    roomObj = Room.objects.get(pk=room)
+
     content = json.dumps({
+        "room_background": roomObj.background_color,
+        "room_title": roomObj.title,
         "room": room,
         "msg_type": "joined"
     })
@@ -115,14 +120,17 @@ def chat_leave(message):
 def chat_send(message):
     print("SEND CHAT")
     room = message['room']
+    roomObj = Room.objects.get(pk=room)
+
     ChatMessage.objects.create(
-        room=room,
+        room=roomObj,
         message=message['message'],
         user=message.user,
         username=message.user.username,
         user_image=str(message.user.profile.profile_photo),
         message_type=message['message_type']
     )
+    print("chat message created succesfuullt")
     content = json.dumps({
         "msg_type": message['message_type'],
         "message": message['message'],
@@ -131,10 +139,12 @@ def chat_send(message):
         "user_id": message.user.id,
         "user_image": str(message.user.profile.profile_photo)
     })
+
     # Broadcast to listening sockets
     Group("chat-%s" % room).send({
         "text": content
     })
+    print("content sendt")
 
 
 
