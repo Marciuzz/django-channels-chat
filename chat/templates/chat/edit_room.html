@@ -44,6 +44,8 @@
         </div>
     </div>
     <script>
+        document.getElementById('chat_title_id').innerText = document.getElementById('id_title').value;
+        document.getElementById('chat_room').style.background = "#" + document.getElementById('id_background_color').value;
         document.getElementById('id_title').addEventListener('change', function(){
             document.getElementById('chat_title_id').innerText = document.getElementById('id_title').value;
         });

@@ -26,7 +26,7 @@ class RegisterView(TemplateView):
         form = RegistrationForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('/chat')
+            return redirect('/')
         return redirect('/users/register')
 
 
