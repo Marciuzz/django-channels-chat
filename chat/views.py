@@ -94,7 +94,7 @@ def upload_photo(request):
 class RoomEditView(TemplateView):
     def get(self, request, room):
         if room =='0':
-            return redirect('/')
+            return redirect('chat:home')
         else:
             room = Room.objects.get(pk=room)
             form = RoomEditForm(instance=room)   
@@ -106,5 +106,5 @@ class RoomEditView(TemplateView):
         form = RoomEditForm(request.POST, instance=room)
         if form.is_valid():
             form.save()
-            return redirect('/chat/' + str(room.pk) + '/' )
-        return redirect('/')
+            return redirect('chat:home_with_id', roomID= str(room.pk))
+        return redirect('chat:home')

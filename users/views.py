@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from models import Friend
 from chat.models import Room
 from django.db.models import Q
+from django.contrib import messages
 
 
 # Create your views here.
@@ -26,8 +27,10 @@ class RegisterView(TemplateView):
         form = RegistrationForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('/')
-        return redirect('/users/register')
+            return redirect('users:login')
+        else:
+            messages.warning(request, 'Try Again')
+            return redirect('users:register')
 
 
 
@@ -45,7 +48,7 @@ class EditProfileView(TemplateView):
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
             profile_form.save()
-            return redirect('/users/view')
+            return redirect('users:view_profile')
         return HttpResponse("Something went wrong")
 
 class ChangePasswordView(TemplateView):
@@ -58,9 +61,9 @@ class ChangePasswordView(TemplateView):
         if form.is_valid():
             form.save()
             update_session_auth_hash(request, form.user)
-            return redirect('/users/view/')
+            return redirect('users:view_profile')
         else:
-            return redirect('/users/change-password')
+            return redirect('users:change_password')
 
 def view_profile(request):
     user = request.user
@@ -72,9 +75,9 @@ def home(request):
 
 def change_friends(request, action, pk):
     if not request.user.is_authenticated():
-        return redirect('/')
+        return redirect('chat:home')
     elif int(pk) == int(request.user.pk):
-        return redirect('/')
+        return redirect('chat:home')
     else:
         new_user = User.objects.get(pk=pk)
         if action == 'add':
@@ -88,10 +91,11 @@ def change_friends(request, action, pk):
             Friend.make_friend(request.user, new_user)
         elif action == 'loose':
             Friend.lose_friend(request.user, new_user)
-        return redirect('/')
+        return redirect('chat:home')
 
 class LoginView(TemplateView):
     def get(self, request):
+
         form = LoginForm()
         args = {'form': form}
 
@@ -103,4 +107,5 @@ class LoginView(TemplateView):
             login(request, form.get_user())
             return redirect('/')
         else:
-            return redirect('/users/login')
+            messages.warning(request, 'Password or username is incorrect!')
+            return redirect('users:login')
