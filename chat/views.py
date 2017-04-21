@@ -5,7 +5,6 @@ from django.shortcuts import render, HttpResponse, redirect
 
 from django.contrib.auth.models import User
 from users.models import Friend
-from chat.models import ChatMessage
 import json
 from django.http import JsonResponse
 from django.core import serializers
@@ -15,7 +14,7 @@ from django.views.decorators.csrf import csrf_exempt
 from channels_chat import settings
 import os
 import time
-from chat.models import Room
+from chat.models import Chat_room, ChatMessage, Chat_group, GroupChatMessage
 from django.views.generic import TemplateView
 from django.db.models import Q
 from chat.forms import RoomEditForm
@@ -33,7 +32,7 @@ def home(request, roomID=None):
         pass
 
     for friend in friends:
-        room = Room.objects.get( (Q(user1=request.user) & Q(user2=friend)) | (Q(user2=request.user) & Q(user1=friend)) )
+        room = Chat_room.objects.get( (Q(user1=request.user) & Q(user2=friend)) | (Q(user2=request.user) & Q(user1=friend)) )
         friend.room = room.pk
 
     friend_ids = []
@@ -51,7 +50,7 @@ def home(request, roomID=None):
 
 def get_messages(request, room):
 
-    targetroom = Room.objects.get(pk=room)
+    targetroom = Chat_room.objects.get(pk=room)
 
     query_data = ChatMessage.objects.filter(room=targetroom).order_by('-created')[:20]
 
@@ -65,7 +64,35 @@ def get_messages(request, room):
             "username": item.user.username,
             "profile_photo": str(item.user.profile.profile_photo),
             "user_id": item.user.pk,
-            "message_type": item.message_type
+            "content_type": item.content_type
+        })
+
+    return HttpResponse(json.dumps(messages))
+
+def get_group_messages(request, group):
+
+    messages = []
+
+    if group == "global":
+        try:
+            targetgroup = Chat_group.objects.get(global_group=True)
+        except:
+            return HttpResponse(json.dumps(messages))
+    else:
+        targetgroup = Chat_group.objects.get(pk=group)
+
+    query_data = GroupChatMessage.objects.filter(group=targetgroup).order_by('-created')[:20]
+
+    
+    for item in query_data:
+        messages.append({
+            "created": item.created.strftime("%Y-%m-%d %H:%M"),
+            "message": item.message,
+            "group": item.group.pk,
+            "username": item.user.username,
+            "profile_photo": str(item.user.profile.profile_photo),
+            "user_id": item.user.pk,
+            "content_type": item.content_type
         })
 
     return HttpResponse(json.dumps(messages))
@@ -96,15 +123,16 @@ class RoomEditView(TemplateView):
         if room =='0':
             return redirect('chat:home')
         else:
-            room = Room.objects.get(pk=room)
+            room = Chat_room.objects.get(pk=room)
             form = RoomEditForm(instance=room)   
             args = {"form": form}
             return render(request, 'chat/edit_room.html', args);
         
     def post(self,request, room):
-        room = Room.objects.get(pk=room)
+        room = Chat_room.objects.get(pk=room)
         form = RoomEditForm(request.POST, instance=room)
         if form.is_valid():
             form.save()
             return redirect('chat:home_with_id', roomID= str(room.pk))
         return redirect('chat:home')
+

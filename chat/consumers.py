@@ -3,7 +3,7 @@ from channels.handler import AsgiHandler
 from channels import Group
 from channels.sessions import channel_session
 from channels.auth import channel_session_user, channel_session_user_from_http
-from models import ChatMessage, Room
+from models import ChatMessage, Chat_room, Chat_group, GroupChatMessage
 from channels import Channel
 import json
 
@@ -12,6 +12,14 @@ import json
 @channel_session_user_from_http
 def ws_connect(message):
     print("ws_connect")
+
+    try:
+        group = Chat_group.objects.get(global_group=True)
+    except:
+        group = Chat_group.objects.create(global_group=True)
+        group.users.add(message.user)
+    
+    Group("chat-group-global").add(message.reply_channel)
 
     message.reply_channel.send({'accept': True})
 
@@ -32,20 +40,20 @@ def ws_message(message):
 def ws_disconnect(message):
     print("LEAVE CHAT") 
     #Group("chat-%s" % message.channel_session['room']).discard(message.reply_channel)
-    Group("chat-1-2").discard(message.reply_channel)
+    #Group("chat-1-2").discard(message.reply_channel)
 
 @channel_session
 def chat_join(message):
     room = message['room']
     Group("chat-%s" % room).add(message['reply_channel'])
     
-    roomObj = Room.objects.get(pk=room)
+    roomObj = Chat_room.objects.get(pk=room)
 
     content = json.dumps({
         "room_background": roomObj.background_color,
         "room_title": roomObj.title,
         "room": room,
-        "msg_type": "joined"
+        "content_type": "joined"
     })
     message.reply_channel.send({
         "text": content
@@ -63,19 +71,12 @@ def chat_leave(message):
 def chat_send(message):
     print("SEND CHAT")
     room = message['room']
-    roomObj = Room.objects.get(pk=room)
+    msg_type = message['message_type']
+    msg_content = message['content_type']
 
-    ChatMessage.objects.create(
-        room=roomObj,
-        message=message['message'],
-        user=message.user,
-        username=message.user.username,
-        user_image=str(message.user.profile.profile_photo),
-        message_type=message['message_type']
-    )
-    print("chat message created succesfuullt")
     content = json.dumps({
-        "msg_type": message['message_type'],
+        "message_type": msg_type,
+        "content_type": message['content_type'],
         "message": message['message'],
         "room": room,
         "username": str(message.user),
@@ -83,7 +84,50 @@ def chat_send(message):
         "user_image": str(message.user.profile.profile_photo)
     })
 
-    # Broadcast to listening sockets
-    Group("chat-%s" % room).send({
-        "text": content
-    })
+    if msg_type == "private":
+        roomObj = Chat_room.objects.get(pk=room)
+        ChatMessage.objects.create(
+            room=roomObj,
+            message=message['message'],
+            user=message.user,
+            username=message.user.username,
+            user_image=str(message.user.profile.profile_photo),
+            content_type=msg_content
+        )
+        # Broadcast to listening sockets\
+        print("SENDING TO PRIVATE GROUP")
+        Group("chat-%s" % room).send({
+            "text": content
+        })
+    elif msg_type == "global":
+        groupObj = Chat_group.objects.get(global_group=True)
+        GroupChatMessage.objects.create(
+            group=groupObj,
+            message=message['message'],
+            user=message.user,
+            username=message.user.username,
+            user_image=str(message.user.profile.profile_photo),
+            content_type=msg_content
+        )
+        # Broadcast to listening sockets
+        print("SENDING TO GLOBAL GROUP")
+        Group("chat-group-%s" % room).send({
+            "text": content
+        })
+    elif msg_type == "group":
+        groupObj = Chat_group.objects.get(global_group=True)
+        GroupChatMessage.objects.create(
+            group=groupObj,
+            message=message['message'],
+            user=message.user,
+            username=message.user.username,
+            user_image=str(message.user.profile.profile_photo),
+            content_type=message['content_type']
+        )
+        # Broadcast to listening sockets
+        print("SENDING TO GLOBAL GROUP")
+        Group("chat-group-%s" % room).send({
+            "text": content
+        })
+
+

@@ -12,20 +12,20 @@
                         <a id="room_edit_link" href="{% url 'chat:edit_room' room=0 %}"><span class="glyphicon glyphicon-wrench edit-chat"></span></a>
                     </div>
             </div>
-            <div id="chat_room">
+            <div id="chat_room" type="global">
             </div>
             <div class="panel-footer">
-                    <div class="input-group">
-                        <input id='chat_input' type="text" class="form-control input-sm chat_input" placeholder="Write your message here..." maxlength="50">
-                        <span class="input-group-btn">
-                            <label id="image-label" class="btn btn-default btn-file disabled">
-                                <span class="glyphicon glyphicon-picture" aria-hidden="true"></span> 
-                                <input type="file" name="image" id="chat_file_input" style="display: none;">
-                            </label>
-                            <button class="btn btn-primary btn-sm" id="btn-chat" disabled=true>Send</button>
-                        </span>
-                    </div>
+                <div class="input-group">
+                    <input id='chat_input' type="text" class="form-control input-sm chat_input" placeholder="Write your message here..." maxlength="1000">
+                    <span class="input-group-btn">
+                        <label id="image-label" class="btn btn-default btn-file">
+                            <span class="glyphicon glyphicon-picture" aria-hidden="true"></span> 
+                            <input type="file" name="image" id="chat_file_input" style="display: none;">
+                        </label>
+                        <button class="btn btn-primary btn-sm" id="btn-chat">Send</button>
+                    </span>
                 </div>
+            </div>
         </div>
         <div class="col-lg-4">
             <h1>Users list</h1>
@@ -56,7 +56,8 @@
 
 <script>
 
-room_to_load = "{{ roomID }}";
+var room_to_load = "{{ roomID }}";
+var user_id = "{{ current_user_id }}";
 
 setTimeout(function() { loadRoom(room_to_load); }, 500);
  
@@ -66,13 +67,11 @@ function loadRoom(room_to_load) {
     }
 }
 
-var user_id = {{ current_user_id }};
 socket = new WebSocket("ws://" + window.location.host + "/chat/");
 
 socket.onmessage = function(e) {
-
     var data = JSON.parse(e.data);
-    if(data.msg_type == "msg"){
+    if(data.content_type == "text"){
         if ( parseInt(user_id, 10) == parseInt(data.user_id,10) ){
             var newmsg = sent_message_template(data.message, data.username, data.user_image, new Date(Date.now()).toLocaleString('lt'));
         }else{
@@ -80,7 +79,7 @@ socket.onmessage = function(e) {
         }
         document.getElementById("room-" + data.room).innerHTML = document.getElementById("room-" + data.room).innerHTML + newmsg;
         document.getElementById('chat_room').scrollTop = document.getElementById('chat_room').scrollHeight;
-    }else if (data.msg_type == "joined"){
+    }else if (data.content_type == "joined"){
 
         document.getElementById('chat_room').style.background = "#" + data.room_background;
         document.getElementById('chat_title_id').innerText = data.room_title;
@@ -93,15 +92,15 @@ socket.onmessage = function(e) {
                
                 for(message in messages){
                     if ( parseInt(user_id, 10) == parseInt(messages[message].user_id, 10) ){
-                        if(messages[message].message_type == "msg"){
+                        if(messages[message].content_type == "text"){
                             var newmsg = sent_message_template(messages[message].message, messages[message].username, messages[message].profile_photo, messages[message].created);
-                        }else if(messages[message].message_type == "image"){
+                        }else if(messages[message].content_type == "image"){
                             var newmsg = sent_image_template(messages[message].message, messages[message].username, messages[message].profile_photo, messages[message].created);
                         }
                     } else {
-                        if(messages[message].message_type == "msg"){
+                        if(messages[message].content_type == "text"){
                             var newmsg = got_message_template(messages[message].message, messages[message].username, messages[message].profile_photo, messages[message].created);
-                        }else if(messages[message].message_type == "image"){
+                        }else if(messages[message].content_type == "image"){
                             var newmsg = got_image_template(messages[message].message, messages[message].username, messages[message].profile_photo, messages[message].created);
                         }
                     }
@@ -112,7 +111,7 @@ socket.onmessage = function(e) {
         };
         xhttp.open("GET", "/chat/get_messages/" + data.room + "/", true);
         xhttp.send();
-    }else if (data.msg_type == "image"){
+    }else if (data.content_type == "image"){
         if ( parseInt(user_id, 10) == parseInt(data.user_id,10) ){
             var newmsg = sent_image_template(data.message, data.username, data.user_image, new Date(Date.now()).toLocaleString('lt'));
         }else{
@@ -133,13 +132,13 @@ for (var i=0; i<elements.length; i++){
         var room = elements[i].getAttribute("room");
   
         return function(){
+            document.getElementById('chat_room').setAttribute("type", "private");
             link = document.getElementById("room_edit_link").href.split("/")
             link[link.length-2] = room
             link = document.getElementById("room_edit_link").href = link.join("/")
 
             var roomdiv = "<div id='room-" + room + "'></div>";
-            document.getElementById('btn-chat').removeAttribute('disabled');
-            document.getElementById('image-label').classList.remove('disabled');
+            
             socket.send(
                     JSON.stringify({
                         "command": "join",
@@ -151,17 +150,41 @@ for (var i=0; i<elements.length; i++){
     })());
 }
 document.getElementById('btn-chat').addEventListener('click', function(){
-    room = document.getElementById('chat_room').getElementsByTagName('div')[0].id
-    room = room.split("-")
-    room = room[room.length-1];
+
     input = document.getElementById('chat_input').value;
+
+    if(input.trim() == ""){
+        return
+    }
+
     document.getElementById('chat_input').value = '';
+
+    message_type = document.getElementById('chat_room').getAttribute('type');
+
+    switch(message_type) {
+        case "private":
+            room = document.getElementById('chat_room').getElementsByTagName('div')[0].id;
+            room = room.split("-");
+            room = room[room.length-1];
+            break;
+        case "global":
+            room = "global";
+            break;
+        case "group":
+            room = "global";
+            break;
+        default:
+            room = "global";
+            break;
+    }
+
     socket.send(
         JSON.stringify({
             "command": "send",
             "message": input,
             "room": room,
-            "message_type": "msg"
+            "content_type": "text",
+            "message_type": message_type,
         })
     );
 });
@@ -251,13 +274,14 @@ document.getElementById('chat_file_input').addEventListener('change', function()
             
             if (this.readyState == 4 && this.status == 200) {
                 response = JSON.parse(this.responseText);
-
+                message_type = document.getElementById('chat_room').getAttribute('type');
                 socket.send(
                     JSON.stringify({
                         "command": "send",
                         "message": response.imagename,
                         "room": response.room,
-                        "message_type": "image"
+                        "content_type": "image",
+                        "message_type": message_type,
                     })
                 );
                 document.getElementById('chat_file_input').value = '';
@@ -265,6 +289,53 @@ document.getElementById('chat_file_input').addEventListener('change', function()
         };
     }
 });
+
+load_global_messages();
+
+function load_global_messages(){
+
+    var roomdiv = "<div id='room-global'></div>";
+
+    document.getElementById('chat_room').innerHTML = roomdiv;      
+
+    
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+            console.log(this.responseText);
+            messages = JSON.parse(this.responseText);
+              
+            for(message in messages){
+                if ( parseInt(user_id, 10) == parseInt(messages[message].user_id, 10) ){
+                    if(messages[message].content_type == "text"){
+                        var newmsg = sent_message_template(messages[message].message, messages[message].username, messages[message].profile_photo, messages[message].created);
+                    }else if(messages[message].content_type == "image"){
+                        var newmsg = sent_image_template(messages[message].message, messages[message].username, messages[message].profile_photo, messages[message].created);
+                    }
+                } else {
+                    if(messages[message].content_type == "text"){
+                        var newmsg = got_message_template(messages[message].message, messages[message].username, messages[message].profile_photo, messages[message].created);
+                    }else if(messages[message].content_type == "image"){
+                        var newmsg = got_image_template(messages[message].message, messages[message].username, messages[message].profile_photo, messages[message].created);
+                    }
+                }
+                document.getElementById("room-global").innerHTML = newmsg + document.getElementById("room-global").innerHTML;                           
+            }
+            document.getElementById('chat_room').scrollTop = document.getElementById('chat_room').scrollHeight;
+        }
+    };
+    xhttp.open("GET", "/chat/get_group_messages/global/", true);
+    xhttp.send();
+    
+
+}
+
+document.addEventListener("keydown", function(e){
+    if (13 == e.keyCode) {
+        document.getElementById("btn-chat").click();
+    }
+});
+
 
 </script>
 

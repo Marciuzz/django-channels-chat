@@ -8,7 +8,7 @@ from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash, login
 from django.contrib.auth.models import User
 from models import Friend
-from chat.models import Room
+from chat.models import Chat_room
 from django.db.models import Q
 from django.contrib import messages
 
@@ -82,10 +82,10 @@ def change_friends(request, action, pk):
         new_user = User.objects.get(pk=pk)
         if action == 'add':
             
-            if Room.objects.filter((Q(user1=request.user) & Q(user2=new_user)) | (Q(user2=request.user) & Q(user1=new_user)) ).exists():
+            if Chat_room.objects.filter((Q(user1=request.user) & Q(user2=new_user)) | (Q(user2=request.user) & Q(user1=new_user)) ).exists():
                 pass
             else:
-                room = Room(user1=request.user, user2=new_user)
+                room = Chat_room(user1=request.user, user2=new_user)
                 room.save()
             
             Friend.make_friend(request.user, new_user)

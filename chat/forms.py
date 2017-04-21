@@ -1,12 +1,12 @@
 from django import forms
-from chat.models import Room
+from chat.models import Chat_room
 from django.forms import ModelForm
 
 class RoomEditForm(ModelForm):
 
     class Meta:
 
-        model = Room
+        model = Chat_room
         fields = (
             'title',
             'background_color',
