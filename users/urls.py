@@ -1,5 +1,5 @@
 from django.conf.urls import url
-from users.views import RegisterView, home, view_profile, EditProfileView, ChangePasswordView, change_friends, LoginView
+from users.views import RegisterView, home, view_profile, EditProfileView, ChangePasswordView, change_friends, LoginView, change_friend_request
 from django.contrib.auth.views import login, logout
 
 
@@ -13,4 +13,5 @@ urlpatterns = [
     url(r'^edit/$', EditProfileView.as_view(), name="edit_profile"),
     url(r'^change-password/$', ChangePasswordView.as_view(), name="change_password"),
     url(r'^connect/(?P<action>.+)/(?P<pk>\d+)$', change_friends, name="change_friends"),
+    url(r'^change_friend_request/(?P<action>.+)/(?P<pk>\d+)$', change_friend_request, name="change_friend_request"),
 ]

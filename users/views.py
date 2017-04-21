@@ -7,7 +7,7 @@ from users.forms import RegistrationForm, EditProfileForm, EditUserForm, LoginFo
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash, login
 from django.contrib.auth.models import User
-from models import Friend
+from models import Friend, Friend_request
 from chat.models import Chat_room
 from django.db.models import Q
 from django.contrib import messages
@@ -33,8 +33,8 @@ class RegisterView(TemplateView):
             return redirect('users:register')
 
 
-
 class EditProfileView(TemplateView):
+    
     def get(self, request):
         user_form = EditUserForm(instance=request.user)
         profile_form = EditProfileForm(instance=request.user.profile)
@@ -89,11 +89,43 @@ def change_friends(request, action, pk):
                 room.save()
             
             Friend.make_friend(request.user, new_user)
+            Friend.make_friend(new_user, request.user)
+
+            requestUserObj = Friend_request.objects.get(current_user=request.user)
+            userRequestedFriendshipObj = Friend_request.objects.get(current_user=User.objects.get(pk=pk))
+            
+            requestUserObj.requests_received.remove(User.objects.get(pk=pk))
+            userRequestedFriendshipObj.requests_sent.remove(request.user)
+            
         elif action == 'loose':
             Friend.lose_friend(request.user, new_user)
+            Friend.lose_friend(new_user, request.user)
         return redirect('chat:home')
 
+def change_friend_request(request, action, pk):
+
+    try:
+        currentUserObj = Friend_request.objects.get(current_user=request.user)
+    except:
+        currentUserObj = Friend_request.objects.create(current_user=request.user)
+
+    try:
+        friendObj = Friend_request.objects.get(current_user=User.objects.get(pk=pk))
+    except:
+        friendObj = Friend_request.objects.create(current_user=User.objects.get(pk=pk))
+
+    if action=="send":
+        currentUserObj.requests_sent.add(User.objects.get(pk=pk))
+        friendObj.requests_received.add(request.user)
+    elif action=="cancel":
+        currentUserObj.requests_sent.remove(User.objects.get(pk=pk))
+        friendObj.requests_received.remove(request.user)
+
+    return redirect('chat:home')
+
+
 class LoginView(TemplateView):
+
     def get(self, request):
 
         form = LoginForm()

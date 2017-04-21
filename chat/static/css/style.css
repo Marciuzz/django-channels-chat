@@ -159,3 +159,7 @@ img {
 .edit-room-form{
     margin-top: 250px;
 }
+#users, #friends, #friend_request_received, #friend_request_sent{
+    max-height: 200px;
+    overflow-y: auto;
+}

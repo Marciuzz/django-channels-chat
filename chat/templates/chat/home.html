@@ -28,18 +28,28 @@
             </div>
         </div>
         <div class="col-lg-4">
-            <h1>Users list</h1>
-            <div id="users">
+            <h1>Friend requests</h1>
+            <div id="friend_request_received">
                 <ul class="list-group">
-                {% for user in users %}
+                {% for user in requests_received %}
                     <li class="list-group-item">
                         <a class="user-name" href="#" username="{{user.username}}"> {{ user.username }} </a>
-                        <a href="{% url 'users:change_friends' action='add' pk=user.pk %}" class="btn btn-sm btn-info" >Add friend</a>
+                        <a href="{% url 'users:change_friends' action='add' pk=user.pk %}" class="btn btn-sm btn-info" >Accept friend request</a>
+                    </li>   
+                {% endfor %}
+                </ul>
+            </div>
+            <h1>Requests sent</h1>
+            <div id="friend_request_sent">
+                <ul class="list-group">
+                {% for user in requests_sent %}
+                    <li class="list-group-item">
+                        <a class="user-name" href="#" username="{{user.username}}"> {{ user.username }} </a>
+                        <a href="{% url 'users:change_friend_request' action='cancel' pk=user.pk %}" class="btn btn-sm btn-info" >Cancel friend request</a>
                     </li>  
                 {% endfor %}
                 </ul>
             </div>
-
             <h1>Friends</h1>
             <div id="friends">
                 <ul class="list-group">
@@ -48,6 +58,17 @@
                         <a class="user-name" href="#" username="{{friend.username}}" room="{{friend.room}}" id="room-{{friend.room}}"> {{ friend.username }} {{friend.room}} </a>
                         <a href="{% url 'users:change_friends' action='loose' pk=friend.pk %}" class="btn btn-sm btn-danger">Remove friend</a>
                     </li> 
+                {% endfor %}
+                </ul>
+            </div>
+            <h1>Users list</h1>
+            <div id="users">
+                <ul class="list-group">
+                {% for user in users %}
+                    <li class="list-group-item">
+                        <a class="user-name" href="#" username="{{user.username}}"> {{ user.username }} </a>
+                        <a href="{% url 'users:change_friend_request' action='send' pk=user.pk %}" class="btn btn-sm btn-info" >Send friend request</a>
+                    </li>  
                 {% endfor %}
                 </ul>
             </div>

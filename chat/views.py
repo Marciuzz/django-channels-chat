@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from django.shortcuts import render, HttpResponse, redirect
 
 from django.contrib.auth.models import User
-from users.models import Friend
+from users.models import Friend, Friend_request
 import json
 from django.http import JsonResponse
 from django.core import serializers
@@ -25,6 +25,10 @@ from chat.forms import RoomEditForm
 def home(request, roomID=None):
 
     friends = {}
+    skip_user_ids = []
+    requests_sent = {}
+    requests_received = {}
+
     try:
         friend = Friend.objects.get(current_user=request.user)
         friends = friend.users.all()
@@ -34,17 +38,29 @@ def home(request, roomID=None):
     for friend in friends:
         room = Chat_room.objects.get( (Q(user1=request.user) & Q(user2=friend)) | (Q(user2=request.user) & Q(user1=friend)) )
         friend.room = room.pk
+        skip_user_ids.append(friend.pk)
 
-    friend_ids = []
-    for friend in friends:
-        friend_ids.append(friend.pk)
-    friend_ids.append(request.user.pk)
+    skip_user_ids.append(request.user.pk)
+ 
+    try:
+        reqests_obj = Friend_request.objects.get(current_user=request.user)
+        requests_sent = reqests_obj.requests_sent.all()
+        requests_received = reqests_obj.requests_received.all()
+    except:
+        pass
+    
+    for user in requests_sent:
+        skip_user_ids.append(user.pk)
 
-    users = User.objects.filter(~Q(pk__in = friend_ids))
+    for user in requests_received:
+        skip_user_ids.append(user.pk)
+        
+    users = User.objects.filter(~Q(pk__in = skip_user_ids))
+
     if roomID:
-        args = {'users': users, 'friends': friends, 'current_user_id': request.user.pk, 'roomID': roomID}
+        args = {'users': users, 'friends': friends, 'current_user_id': request.user.pk, 'roomID': roomID, 'requests_received': requests_received, 'requests_sent': requests_sent}
     else:
-        args = {'users': users, 'friends': friends, 'current_user_id': request.user.pk, 'roomID': "False"}
+        args = {'users': users, 'friends': friends, 'current_user_id': request.user.pk, 'roomID': "False", 'requests_received': requests_received, 'requests_sent': requests_sent}
 
     return render(request, 'chat/home.html', args)
 

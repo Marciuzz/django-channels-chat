@@ -20,8 +20,8 @@ def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
 
 class Friend(models.Model):
-    users = models.ManyToManyField(User)
-    current_user = models.ForeignKey(User, related_name='owner', null=True)
+    users = models.ManyToManyField(User, blank=True)
+    current_user = models.ForeignKey(User, related_name='owner')
 
     @classmethod
     def make_friend(cls, current_user, new_friend):
@@ -36,3 +36,9 @@ class Friend(models.Model):
             current_user=current_user
         )   
         friend.users.remove(new_friend)
+
+class Friend_request(models.Model):
+
+    requests_sent = models.ManyToManyField(User, related_name="requests_sent", blank=True)
+    requests_received = models.ManyToManyField(User, related_name="requests_received", blank=True)
+    current_user = models.ForeignKey(User, related_name='requests_owner')
