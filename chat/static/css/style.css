@@ -99,13 +99,7 @@ img {
 .right{
     float: right;
 }
-.user-name{
-    float: left;
-    padding: 5px;
-}
-.list-group-item{
-    text-align: right;
-}
+
 .change-password-container, .registration-container, .edit-profile-containter{
     width: 600px;
     margin: 100px auto 0px auto;
@@ -145,7 +139,7 @@ img {
     cursor: inherit;
 }
 #chat_input{
-    width: 96%;
+    width: 94%;
 }
 .message-img{
     max-height: 200px;
@@ -162,4 +156,31 @@ img {
 #users, #friends, #friend_request_received, #friend_request_sent{
     max-height: 200px;
     overflow-y: auto;
+}
+.btn-file{
+    padding: 5px 12px 7px 12px;
+}
+#btn-chat{
+    padding: 6px 12px 7px 12px;
+}
+.user-img{
+    max-height: 50px;
+    width: 50px;
+    display: inline;
+}
+.list-group-left{
+    position: relative;
+    width: 70%;
+    display: inline-block;
+    text-align: left;
+}
+.list-group-right{
+    position: relative;
+    width: 25%;
+    display: inline-block;
+    text-align: right;
+    display: inline-flex;
+}
+.list-group-item:hover{
+    background: #EBEBEB;
 }

@@ -83,7 +83,7 @@ def chat_send(message):
         "user_id": message.user.id,
         "user_image": str(message.user.profile.profile_photo)
     })
-
+      
     if msg_type == "private":
         roomObj = Chat_room.objects.get(pk=room)
         ChatMessage.objects.create(
