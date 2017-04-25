@@ -109,9 +109,11 @@
 var room_to_load = "{{ roomID }}";
 var user_id = "{{ current_user_id }}";
 
-document.onreadystatechange = function () {
-    if (document.readyState === "complete"){
-        if(room_to_load != "False"){
+
+socket = new WebSocket("ws://" + window.location.host + "/chat/");
+
+socket.onopen = function (event) {
+    if(room_to_load != "False"){
             elements = document.getElementById("friends").getElementsByClassName("list-group-item");
 
             for(var i=0; i<elements.length; i++){
@@ -125,10 +127,7 @@ document.onreadystatechange = function () {
         } else{
             load_global_messages();
         }
-    }
-}
-
-socket = new WebSocket("ws://" + window.location.host + "/chat/");
+};
 
 socket.onmessage = function(e) {
     var data = JSON.parse(e.data);
