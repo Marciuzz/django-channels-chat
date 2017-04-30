@@ -109,7 +109,6 @@
 var room_to_load = "{{ roomID }}";
 var user_id = "{{ current_user_id }}";
 
-
 socket = new WebSocket("ws://" + window.location.host + "/chat/");
 
 socket.onopen = function (event) {
@@ -118,7 +117,6 @@ socket.onopen = function (event) {
 
             for(var i=0; i<elements.length; i++){
                 link = elements[i].getElementsByClassName("start-chat")[0];
-                console.log(link);
                 if( link.getAttribute("room") == room_to_load){
                     link.click();
                     break;
@@ -202,7 +200,7 @@ for (var i=0; i<elements.length; i++){
         return function(){
 
             document.getElementById("chat_type").innerHTML = "Private chat";
-            document.getElementById('chat_title_id').innerText = "Chatting with " + name;
+            document.getElementById('chat_title_id').innerText = " Chatting with " + name;
 
             if( document.getElementById("friends").getElementsByClassName("selected").length  )  {
                 document.getElementById("friends").getElementsByClassName("selected")[0].classList.remove("selected");

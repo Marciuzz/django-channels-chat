@@ -11,6 +11,7 @@ import json
 #Connected to websocket.connect
 @channel_session_user_from_http
 def ws_connect(message):
+    
     print("ws_connect")
 
     try:

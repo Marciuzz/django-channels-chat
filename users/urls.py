@@ -6,7 +6,7 @@ from django.contrib.auth.views import login, logout
 urlpatterns = [
     url(r'^$', home, name="home"),
     url(r'^login/$', LoginView.as_view(), name="login"),
-
+    url(r'^login$', LoginView.as_view(), name="login"),
     url(r'^logout/$', logout, {'next_page': 'chat:home'}, name="logout"),
     url(r'^register/$', RegisterView.as_view(), name="register"),
     url(r'^view/$', view_profile, name="view_profile"),
