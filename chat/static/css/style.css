@@ -73,7 +73,7 @@ img {
 }
 #chat_room{
     background: #b4adc9;
-    height: 600px;
+    height: 60%;
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -117,7 +117,6 @@ img {
 }
 .logged-as{
     line-height: 50px;
-    margin-left: 50px;
 }
 .btn-file {
     position: relative;
@@ -183,4 +182,9 @@ img {
 }
 .list-group-item:hover{
     background: #EBEBEB;
+}
+
+.navbar-nav>li>a.btn-padding {
+    padding-top: 8px;
+    padding-bottom: 8px;
 }

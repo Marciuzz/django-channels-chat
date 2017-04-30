@@ -1,8 +1,8 @@
 {
-    "remotePath": "/var/www/channels-chat/channels_chat/",
-    "host": "192.168.131.131",
-    "username": "website-manager",
-    "password": "website-manager",
+    "remotePath": "/home/admin/software-architecture-project/django-channels-chat",
+    "host": "192.168.78.128",
+    "username": "admin",
+    "password": "admin",
     "port": 21,
     "secure": false,
     "protocol": "ftp",
