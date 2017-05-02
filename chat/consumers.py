@@ -11,7 +11,7 @@ import json
 #Connected to websocket.connect
 @channel_session_user_from_http
 def ws_connect(message):
-    
+
     print("ws_connect")
 
     try:
@@ -62,6 +62,26 @@ def chat_join(message):
     
     print("JOIN CHAT")
 
+@channel_session
+def group_chat_join(message):
+
+    room = message['room']
+    Group("chat-group-%s" % room).add(message['reply_channel'])
+    
+    roomObj = Chat_group.objects.get(pk=room)
+
+    content = json.dumps({
+        "room_background": roomObj.background_color,
+        "room_title": roomObj.title,
+        "room": room,
+        "content_type": "joined_a_group"
+    })
+    message.reply_channel.send({
+        "text": content
+    })
+    
+    print("JOIN GROUP CHAT")
+
 def chat_leave(message):
     print("LEAVE CHAT") 
     room = message['room']
@@ -111,12 +131,12 @@ def chat_send(message):
             content_type=msg_content
         )
         # Broadcast to listening sockets
-        print("SENDING TO GLOBAL GROUP")
+        print("SENDING TO GLOBAL CHAT")
         Group("chat-group-%s" % room).send({
             "text": content
         })
     elif msg_type == "group":
-        groupObj = Chat_group.objects.get(global_group=True)
+        groupObj = Chat_group.objects.get(pk=room)
         GroupChatMessage.objects.create(
             group=groupObj,
             message=message['message'],
@@ -126,9 +146,7 @@ def chat_send(message):
             content_type=message['content_type']
         )
         # Broadcast to listening sockets
-        print("SENDING TO GLOBAL GROUP")
+        print("SENDING TO GROUP CHAT")
         Group("chat-group-%s" % room).send({
             "text": content
         })
-
-

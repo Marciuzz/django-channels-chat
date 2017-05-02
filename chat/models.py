@@ -19,6 +19,9 @@ class Chat_group(models.Model):
     title = models.CharField(max_length=30, default="chat-room")
     global_group = models.BooleanField(default=False)
 
+    def __str__(self):
+        return self.title
+
 class ChatMessage(models.Model):
 
     message = models.CharField(max_length=255)
@@ -38,4 +41,3 @@ class GroupChatMessage(models.Model):
     username = models.CharField(max_length=255, null=True)
     user_image = models.CharField(max_length=255, null=True)
     content_type = models.CharField(max_length=10, null=True)
-

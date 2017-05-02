@@ -151,7 +151,7 @@ img {
     font-size: 18px;
 }
 .edit-room-form{
-    margin-top: 250px;
+    margin-top: 50px;
 }
 #users, #friends, #friend_request_received, #friend_request_sent{
     max-height: 200px;
@@ -181,9 +181,6 @@ img {
     text-align: right;
     display: inline-flex;
 }
-.list-group-item:hover{
-    background: #EBEBEB;
-}
 
 .navbar-nav>li>a.btn-padding {
     padding-top: 8px;
@@ -197,4 +194,25 @@ a.start-chat {
 
 ul.nav {
     margin-left: 20px;
+}
+
+li.selected {
+    background-color:#eee !important;
+}
+
+#id_users {
+    list-style:none;
+    padding-left: 0;
+}
+
+li.group-chat-remove {
+        padding: 20px 25px;
+}
+
+.group-chat-remove div.list-group-right {
+    display: inline-block;
+}
+
+#chat_title_id {
+    margin-left:10px;
 }

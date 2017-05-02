@@ -17,17 +17,18 @@ import time
 from chat.models import Chat_room, ChatMessage, Chat_group, GroupChatMessage
 from django.views.generic import TemplateView
 from django.db.models import Q
-from chat.forms import RoomEditForm
+from chat.forms import RoomEditForm, GroupRoomEditForm
 
 # Create your views here.
 
 @login_required
-def home(request, roomID=None):
+def home(request, roomID=None, group_roomID=None):
 
     friends = {}
     skip_user_ids = []
     requests_sent = {}
     requests_received = {}
+    group_chats = {}
 
     try:
         friend = Friend.objects.get(current_user=request.user)
@@ -54,13 +55,27 @@ def home(request, roomID=None):
 
     for user in requests_received:
         skip_user_ids.append(user.pk)
-        
+
+    try:
+        group_chats = Chat_group.objects.all()
+    except:
+        pass
+
+    for group_chat in group_chats:
+        group_chat.room = group_chat.pk
+
     users = User.objects.filter(~Q(pk__in = skip_user_ids))
 
     if roomID:
-        args = {'users': users, 'friends': friends, 'current_user_id': request.user.pk, 'roomID': roomID, 'requests_received': requests_received, 'requests_sent': requests_sent}
+        args = {'users': users, 'friends': friends, 'current_user_id': request.user.pk, 'roomID': roomID, 'requests_received': requests_received, 'requests_sent': requests_sent, 'group_chats': group_chats}
     else:
-        args = {'users': users, 'friends': friends, 'current_user_id': request.user.pk, 'roomID': "False", 'requests_received': requests_received, 'requests_sent': requests_sent}
+        args = {'users': users, 'friends': friends, 'current_user_id': request.user.pk, 'roomID': "False", 'requests_received': requests_received, 'requests_sent': requests_sent, 'group_chats': group_chats}
+
+    if group_roomID:
+        args = {'users': users, 'friends': friends, 'current_user_id': request.user.pk, 'roomID': "False", 'group_roomID': group_roomID, 'requests_received': requests_received, 'requests_sent': requests_sent, 'group_chats': group_chats}
+    else:
+        args = {'users': users, 'friends': friends, 'current_user_id': request.user.pk, 'roomID': "False", 'group_roomID': "False", 'requests_received': requests_received, 'requests_sent': requests_sent, 'group_chats': group_chats}
+
 
     return render(request, 'chat/home.html', args)
 
@@ -99,7 +114,6 @@ def get_group_messages(request, group):
 
     query_data = GroupChatMessage.objects.filter(group=targetgroup).order_by('-created')[:20]
 
-    
     for item in query_data:
         messages.append({
             "created": item.created.strftime("%Y-%m-%d %H:%M"),
@@ -152,3 +166,41 @@ class RoomEditView(TemplateView):
             return redirect('chat:home_with_id', roomID= str(room.pk))
         return redirect('chat:home')
 
+class GroupChatCreateView(TemplateView):
+    def get(self, request):
+        form = GroupRoomEditForm()
+        args = {"form": form}
+        return render(request, 'chat/create_group_chat.html', args)
+        
+    def post(self,request):
+        form = GroupRoomEditForm(request.POST)
+        if form.is_valid():
+            form.save()
+            the_last_chat = Chat_group.objects.last()
+            return redirect('chat:group_with_id', group_roomID=str(the_last_chat.pk))
+        return redirect('chat:home')
+
+class GroupRoomEditView(TemplateView):
+    def get(self, request, room):
+        if room =='0':
+            return redirect('chat:home')
+        else:
+            room = Chat_group.objects.get(pk=room)
+            form = GroupRoomEditForm(instance=room)
+            friend = Friend.objects.get(current_user=request.user)
+            friends = friend.users.all()
+            args = {"form": form, 'friends': friends}
+            return render(request, 'chat/edit_group_room.html', args);
+        
+    def post(self,request, room):
+        room = Chat_group.objects.get(pk=room)
+        form = GroupRoomEditForm(request.POST, instance=room)
+        if form.is_valid():
+            form.save()
+            return redirect('chat:group_with_id', group_roomID= str(room.pk))
+        return redirect('chat:home')
+        
+def remove_group_chat(self, room):
+    currentRoom = Chat_group.objects.get(pk=room)
+    currentRoom.delete()
+    return redirect('chat:home')
