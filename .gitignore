@@ -3,3 +3,4 @@ users/migrations/*
 chat/migrations/*
 *.pyc
 media/*
+.vscode
